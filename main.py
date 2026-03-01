@@ -11,11 +11,11 @@ db = SQLAlchemy(app)
 def home():
     return render_template("index.html")
 
-class Saldo(db.Model):
+class Transacao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(80), nullable=False)
-    receita = db.Column(db.Float, nullable=False)
-    gasto = db.Column(db.Float, nullable=False)
+    nome = db.Column(db.String(100), nullable=False)  
+    tipo = db.Column(db.String(10), nullable=False) 
+    valor = db.Column(db.Float, nullable=False)
 
 with app.app_context():
     db.create_all()
@@ -24,7 +24,7 @@ with app.app_context():
 def adicionar_receita():
     data = request.json
     if 'nome' in data and 'receita' in data and 'gasto' in data:
-        nova_receita = Saldo(
+        nova_receita = Transacao(
             nome=data["nome"],
             receita=data["receita"],
             gasto=data["gasto"],
@@ -36,7 +36,7 @@ def adicionar_receita():
 
 @app.route('/api/saldo/delete/<int:saldo_id>', methods=["DELETE"])
 def deleteSaldo(saldo_id):
-    saldo = Saldo.query.get(saldo_id)
+    saldo = Transacao.query.get(saldo_id)
     if saldo:
         db.session.delete(saldo)
         db.session.commit()
@@ -46,19 +46,35 @@ def deleteSaldo(saldo_id):
 @app.route("/salvar", methods=["POST"])
 def salvar():
     nome = request.form["nome"]
-    receita = float(request.form["receita"])
-    gasto = float(request.form["gasto"])
+    tipo = request.form["tipo"]
+    valor = float(request.form["valor"])
 
-    novo = Saldo(
+    nova = Transacao(
         nome=nome,
-        receita=receita,
-        gasto=gasto,
+        tipo=tipo,
+        valor=valor
     )
 
-    db.session.add(novo)
+    db.session.add(nova)
     db.session.commit()
 
-    return "Dados salvos com sucesso!"
+    return "Transação salva!"
+
+@app.route("/api/saldo")
+def calcular_saldo():
+    receitas = db.session.query(db.func.sum(Transacao.valor))\
+        .filter(Transacao.tipo == "receita").scalar() or 0
+
+    despesas = db.session.query(db.func.sum(Transacao.valor))\
+        .filter(Transacao.tipo == "despesa").scalar() or 0
+
+    saldo = receitas - despesas
+
+    return {
+        "total_receitas": receitas,
+        "total_despesas": despesas,
+        "saldo_atual": saldo
+    }
 
 if __name__ == '__main__':
     app.run(debug=True)
