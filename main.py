@@ -16,7 +16,6 @@ class Saldo(db.Model):
     nome = db.Column(db.String(80), nullable=False)
     receita = db.Column(db.Float, nullable=False)
     gasto = db.Column(db.Float, nullable=False)
-    descricao = db.Column(db.Text, nullable=True)
 
 with app.app_context():
     db.create_all()
@@ -29,7 +28,6 @@ def adicionar_receita():
             nome=data["nome"],
             receita=data["receita"],
             gasto=data["gasto"],
-            descricao=data.get("descricao", "")
         )
         db.session.add(nova_receita)
         db.session.commit()
@@ -50,13 +48,11 @@ def salvar():
     nome = request.form["nome"]
     receita = float(request.form["receita"])
     gasto = float(request.form["gasto"])
-    descricao = request.form.get("descricao", "")
 
     novo = Saldo(
         nome=nome,
         receita=receita,
         gasto=gasto,
-        descricao=descricao
     )
 
     db.session.add(novo)
